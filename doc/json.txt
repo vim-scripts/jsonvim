@@ -1,0 +1,75 @@
+*json.txt*  Utility used to json JSON files
+==============================================================================
+CONTENTS                                                     *json-contents*
+
+    1. Intro                                      |json-intro|
+    2. Functionality provided                     |json-functionality|
+        2.1. Commands                             |json-commands|
+        2.2. Functions                            |json-functions|
+    3. Options                                    |json-options|
+
+==============================================================================
+1. Intro                                                        *json-intro*
+
+This plugin provides the ability to load JSON encoded data from files and dump 
+Vim variables to files. Data loaded is cached in order to speed up the 
+plugin.
+
+Plugin requires chk, stuf and load plugins. It is also recommended having Vim 
+compiled with |+python| feature. In order to load JSON files using Python you 
+should install demjson plugin. Note that vimscript alternative to 
+Python+demjson is too slow and does not support surrogate pairs.
+
+==============================================================================
+2. Functionality provided                               *json-functionality*
+
+This plugin provides one command and two functions. Functions are accessed via 
+dictionary returned by |load-func-getfunctions| function.
+
+------------------------------------------------------------------------------
+2.1. Commands                                                *json-commands*
+                                                              *json-actions*
+
+:JSONCommand {action} ...                     *json-:Command* *:JSONCommand*
+            The only command provided by this plugin. If variable 
+            g:jsonOptions exists and has key _cprefix, then prefix JSON is 
+            altered.
+:JSONCommand showcache                               *json-action-showcache*
+            Show the contents of the cache in two columns: filename and last 
+            modification time.
+:JSONCommand purgecache                             *json-action-purgecache*
+            Purge cache.
+
+------------------------------------------------------------------------------
+2.2. Functions                                              *json-functions*
+
+All following functions are accessed via dictionary returned by 
+|load-func-getfunctions| function.
+
+load({file}[, {ignorecache}])                               *json-func-load*
+        Load JSON data from file. If {ignorecache} is present and is equal 
+        to 1 then ignore existing cache.
+loads({string})                                            *json-func-loads*
+        Load JSON data from string.
+dump({file}, {data})                                        *json-func-dump*
+        Dump JSON-encoded {data} to file {file}.
+dumps({data})                                              *json-func-dumps*
+        Encode {data} in JSON and return resulting string.
+
+==============================================================================
+3. Options                                                    *json-options*
+                                             *b:jsonOptions* *g:jsonOptions*
+All options must be located in g:jsonOptions dictionary.
+
+UsePython :: Bool                                       *json-opt-UsePython*
+        Specifies whether to use Python or not. Default is 1.
+
+_cprefix :: String                                       *json-opt-_cprefix*
+        Specifies the command prefix. Default is "JSON". See 
+        |load-opt-_cprefix|
+DoNotLoad                                              *json-opt-DoNotLoad*
+        If this key exists and plugin is not already loaded, then it will not 
+        be loaded.
+
+vim: ft=help:tw=78
+

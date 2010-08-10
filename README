@@ -1,0 +1,10 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=3185
+
+This plugin provides the ability to load JSON encoded data from files and dump 
+Vim variables to files. Data loaded is cached in order to speed up the 
+plugin.
+
+This plugin also provides Russian documentation. Add «ru» to option «helplang» in order to use it.
+
+Documentation: http://kp-pav.narod2.ru/vim/doc/json.txt.html
+Russian documentation: http://kp-pav.narod2.ru/vim/doc/json.rux.html
