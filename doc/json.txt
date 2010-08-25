@@ -1,4 +1,4 @@
-*json.txt*  Utility used to json JSON files
+*json.txt*  Utility used to parse and emit JSON data
 ==============================================================================
 CONTENTS                                                     *json-contents*
 
@@ -15,10 +15,14 @@ This plugin provides the ability to load JSON encoded data from files and dump
 Vim variables to files. Data loaded is cached in order to speed up the 
 plugin.
 
-Plugin requires chk, stuf and load plugins. It is also recommended having Vim 
-compiled with |+python| feature. In order to load JSON files using Python you 
-should install demjson plugin. Note that vimscript alternative to 
-Python+demjson is too slow and does not support surrogate pairs.
+Plugin requires some additional plugins:
+  - vimpluginloader
+  - vimstuff
+  - vimargumentchec
+(with their dependencies). It is also recommended having Vim compiled with 
+|+python| feature. In order to load JSON files using Python you should install 
+demjson plugin. Note that vimscript alternative to Python+demjson is too slow 
+and does not support surrogate pairs.
 
 ==============================================================================
 2. Functionality provided                               *json-functionality*
@@ -33,7 +37,7 @@ dictionary returned by |load-func-getfunctions| function.
 :JSONCommand {action} ...                     *json-:Command* *:JSONCommand*
             The only command provided by this plugin. If variable 
             g:jsonOptions exists and has key _cprefix, then prefix JSON is 
-            altered.
+            altered, see |load-opt-_cprefix|.
 :JSONCommand showcache                               *json-action-showcache*
             Show the contents of the cache in two columns: filename and last 
             modification time.
@@ -67,6 +71,7 @@ UsePython :: Bool                                       *json-opt-UsePython*
 _cprefix :: String                                       *json-opt-_cprefix*
         Specifies the command prefix. Default is "JSON". See 
         |load-opt-_cprefix|
+
 DoNotLoad                                              *json-opt-DoNotLoad*
         If this key exists and plugin is not already loaded, then it will not 
         be loaded.

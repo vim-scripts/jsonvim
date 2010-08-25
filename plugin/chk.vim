@@ -26,8 +26,8 @@ elseif !exists("s:g.pluginloaded")
     let s:g.load.scriptfile=expand("<sfile>")
     let s:g.srccmd="source ".(s:g.load.scriptfile)
     let s:g.load.f=[
-                \["checkargument",  "achk._main", {}],
-                \["checkarguments", "cchk._main", {}]]
+                \["checkargument",  "achk._main_init", {}],
+                \["checkarguments", "cchk._main_init", {}]]
     "{{{4 sid
     function s:SID()
         return matchstr(expand('<sfile>'), '\d\+\ze_SID$')
@@ -46,7 +46,7 @@ elseif !exists("s:g.pluginloaded")
                 \   "apiversion": "0.1",
                 \     "requires": [["load", '0.0']],
             \})
-    let s:F.main.eerror=s:g.reginfo.functions.eerror
+    let s:F.main._eerror=s:g.reginfo.functions.eerror
     "}}}2
     finish
 endif
@@ -152,6 +152,23 @@ function s:F.main.destruct()
     unlet s:g
     unlet s:F
     return 1
+endfunction
+"{{{3 main.eerror
+let s:g.doredir=0
+let s:g.errors=[]
+function s:F.main.eerror(...)
+    if s:g.doredir
+        call add(s:g.errors, a:000)
+    else
+        call call(s:F.main._eerror, a:000, {})
+    endif
+    return 0
+endfunction
+"{{{3 main.echoerrors
+function s:F.main.echoerrors()
+    while !empty(s:g.errors)
+        call call(s:F.main._eerror, remove(s:g.errors, 0), {})
+    endwhile
 endfunction
 "{{{2 comm: getarg
 "{{{3 s:g.comm
@@ -503,6 +520,9 @@ function s:F.cchk.gettrun(trun, fulls)
     else
         let fulls=a:fulls
     endif
+    if index(fulls, a:trun)!=-1
+        return a:trun
+    endif
     let reg='^'.s:F.stuf.regescape(a:trun)
     let fullsfound=0
     for full in fulls
@@ -617,6 +637,11 @@ function s:F.cchk._main(chk, args, ...)
         let shift=a:000[0]
     endif
     return call(s:F.mod[a:chk.model], [a:chk, a:args, shift], {})
+endfunction
+"{{{3 cchk._main_init
+function s:F.cchk._main_init(...)
+    let s:g.doredir=0
+    return call(s:F.cchk._main, a:000, {})
 endfunction
 "{{{3 s:g.cchk
 let s:g.cchk={
@@ -770,16 +795,14 @@ function s:F.achk.and(chk, Arg)
 endfunction
 "{{{3 achk.or:     Список проверок
 function s:F.achk.or(chk, Arg)
-    silent! redir => s:g.achk.error
+    let s:g.doredir+=1
     for chk in a:chk
         silent if s:F.achk._main(chk, a:Arg)
             return 1
         endif
     endfor
-    redir END
-    echohl Error
-    echo s:g.achk.error[1:]
-    echohl None
+    let s:g.doredir-=1
+    call s:F.main.echoerrors()
     return 0
 endfunction
 "{{{3 achk.not:    Обратная проверка
@@ -864,7 +887,7 @@ function s:F.achk.nums(chk, Arg)
     let selfname="achk.nums"
     if type(a:Arg)!=type("")
         return s:F.main.eerror(selfname, "value", ["str"])
-    elseif a:Arg!~#'^\(\d\+\(\.\d\+\(e[+-]\=\d\+\)\=\)\=\|0x\d\+\)$'
+    elseif a:Arg!~#'^[+-]\=\(\d\+\(\.\d\+\(e[+-]\=\d\+\)\=\)\=\|0x\d\+\)$'
         return s:F.main.eerror(selfname, "value", ["nums"])
     endif
     try
@@ -1032,6 +1055,11 @@ function s:F.achk._main(chk, Arg)
     endif
     "}}}4
     return s:F.main.eerror(selfname, "value", emsg)
+endfunction
+"{{{3 achk._main_init
+function s:F.achk._main_init(...)
+    let s:g.doredir=0
+    return call(s:F.achk._main, a:000, {})
 endfunction
 "{{{2 Внешние дополнения
 " let s:F.plug.stuf=s:F.plug.load.getfunctions("stuf")

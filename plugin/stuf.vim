@@ -134,7 +134,7 @@ let s:g.pluginloaded=1
 unlet s:g.load
 "{{{1 Вторая загрузка — функции
 "{{{2 plug
-let s:F.plug.comp=s:F.plug.load.getfunctions("comp")
+let s:F.plug.comp=s:F.plug.load.lazygetfunctions("comp")
 let s:F.plug.chk =s:F.plug.load.getfunctions("chk")
 "{{{2 stuf
 "{{{3 stuf.writevar: записать в переменную
@@ -166,7 +166,7 @@ let s:g.str={}
 "{{{3 str.escapefor
 let s:F.str.escapefor={}
 let s:g.str.escapefor={
-            \"regex": 'escape(a:str, ''^$*~[]\'')',
+            \"regex": 'escape(a:str, ''^$*~[].\'')',
             \"map": 'escape('.
             \        'substitute('.
             \         'substitute('.
@@ -416,7 +416,9 @@ endfunction
 "{{{2 main: destruct
 "{{{3 main.destruct: выгрузить плагин
 function s:F.main.destruct()
-    call s:F.plug.comp.delcomp(s:g.comp._cnameE)
+    if has_key(s:F.plug.comp, "delcomp")
+        call s:F.plug.comp.delcomp(s:g.comp._cnameE)
+    endif
     unlet s:g
     unlet s:F
     return 1
@@ -494,10 +496,18 @@ function s:F.comp._completeEopt(arglead)
     endif
     return []
 endfunction
-let s:F.comp._completeE=s:F.plug.comp.ccomp(s:g.comp._cnameE,
+let s:g.comp.Emodel=
             \{"model": "simple",
             \ "arguments": [["first", [["func", s:F.comp._completeEopt],
-            \                          ["file", ""]]]]})
+            \                          ["file", ""]]]]}
+function s:F.comp._completeE(...)
+    if !has_key(s:F.comp, "__completeE")
+        let s:F.comp.__completeE=
+                    \s:F.plug.load.run(s:F.plug.comp, "ccomp",
+                    \                  s:g.comp._cnameE, s:g.comp.Emodel)
+    endif
+    return call(s:F.comp.__completeE, a:000, {})
+endfunction
 "{{{1
 lockvar! s:g
 unlockvar! s:g.out.option
