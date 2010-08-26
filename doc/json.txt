@@ -20,9 +20,9 @@ Plugin requires some additional plugins:
   - vimstuff
   - vimargumentchec
 (with their dependencies). It is also recommended having Vim compiled with 
-|+python| feature. In order to load JSON files using Python you should install 
-demjson plugin. Note that vimscript alternative to Python+demjson is too slow 
-and does not support surrogate pairs.
+|+python| feature. This plugin picks up first of demjson, simplejson and json 
+Python modules that is present on your system. Note that vimscript alternative 
+to Python is too slow and does not support surrogate pairs.
 
 ==============================================================================
 2. Functionality provided                               *json-functionality*

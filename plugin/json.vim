@@ -480,6 +480,23 @@ let s:g.json.acts={
             \'[': s:F.json.getlst,
             \'{': s:F.json.getobj,
             \}
+"{{{3 json.setpython:
+function s:F.json.setpython()
+python <<EOF
+import vim
+try:
+    import demjson as json
+    loadfunc=json.decode
+    dumpfunc=json.encode
+except ImportError:
+    try:
+        import simplejson as json
+    except ImportError:
+        import json
+    loadfunc=json.loads
+    dumpfunc=json.dumps
+EOF
+endfunction
 "{{{3 json.loads: JSON string->vim
 " Загрузка переменной из JSON
 function s:F.json.loads(str)
@@ -494,9 +511,8 @@ function s:F.json.loads(str)
     endfor
     "{{{4 Собственно, загрузка
     try
-        python import vim
-        python import demjson as json
-        python jstr=json.decode(vim.eval("a:str"))
+        call s:F.json.setpython()
+        python jstr=loadfunc(vim.eval("a:str"))
         " Simplejson не поддерживает UTF-8 символы выше 0x10FFFF, а demjson не 
         " сваливается с ошибкой, если встречается неверный UTF-8.
         " //Кроме того, demjson выдаёт UTF-8 строку, которую, если она содержит 
@@ -523,13 +539,13 @@ function s:F.json.dumps(what)
     endif
     "{{{4 Собственно, выгрузка
     try
-        python import vim
-        python import demjson as json
+        call s:F.json.setpython()
         python var=vim.eval("a:what")
         " Simplejson не поддерживает UTF-8 символы выше 0x10FFFF, а demjson не 
         " сваливается с ошибкой, если встречается неверный UTF-8.
         python vim.command("let str='"+
-                    \str(bytearray(json.encode(var), "utf-8")).replace("'", "''"))
+                    \str(bytearray(dumpfunc(var), "utf-8")).replace("'", "''")+
+                    \"'")
         return str
     catch
         return s:F.json.vsdumps(a:what)
