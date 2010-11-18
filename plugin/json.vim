@@ -423,7 +423,7 @@ endfunction
 function s:F.json.get(str)
     "{{{5 Объявление переменных
     let selfname="json.get"
-    let delta=match(a:str, '\_\s*\zs[\[{"tfn[:digit:].\-]')
+    let delta=match(a:str, '\_\s*\zs[[{"tfn[:digit:].\-]')
     if delta==-1
         return 0
     endif
@@ -558,9 +558,6 @@ endfunction
 function s:F.json.dump(fname, what)
     let selfname="json.dump"
     let fname=fnamemodify(a:fname, ':p')
-    if !s:F.plug.stuf.iswriteable(fname)
-        return s:F.main.eerror(selfname, "file", ["w"])
-    endif
     let str=s:F.json.dumps(a:what)
     return writefile([str], fname)!=1
 endfunction

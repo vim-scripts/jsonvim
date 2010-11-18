@@ -27,8 +27,8 @@ to Python is too slow and does not support surrogate pairs.
 ==============================================================================
 2. Functionality provided                               *json-functionality*
 
-This plugin provides one command and two functions. Functions are accessed via 
-dictionary returned by |load-func-getfunctions| function.
+This plugin provides one command and four functions. Functions are accessed 
+via dictionary returned by |load-func-getfunctions| function.
 
 ------------------------------------------------------------------------------
 2.1. Commands                                                *json-commands*
