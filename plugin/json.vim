@@ -1,173 +1,91 @@
 "{{{1 Начало
 scriptencoding utf-8
-if (exists("s:g.pluginloaded") && s:g.pluginloaded) ||
-            \exists("g:jsonOptions.DoNotLoad")
-    finish
-"{{{1 Первая загрузка
-elseif !exists("s:g.pluginloaded")
+if !exists('s:_pluginloaded')
     "{{{2 Объявление переменных
-    "{{{3 Словари с функциями
-    " Функции для внутреннего использования
-    let s:F={
-                \"load": {},
-                \"plug": {},
-                \"main": {},
-                \"json": {},
-                \"cache":{},
-                \ "mng": {},
-                \"comp": {},
-            \}
-    lockvar 1 s:F
-    "{{{3 Глобальная переменная
-    let s:g={}
-    let s:g.load={}
-    let s:g.c={}
-    let s:g.c.options={"UsePython": ["bool", ""]}
-    let s:g.defaultOptions={
-                \"UsePython": 1,
-            \}
-    let s:g.pluginloaded=0
-    let s:g.load.scriptfile=expand("<sfile>")
-    let s:g.load.f=[["load", "cache.load", {  "model": "optional",
-                \                          "required": [["file", "r"]],
-                \                          "optional": [[["bool", ""],{},0]]}],
-                \   ["loads", "json.loads", {  "model": "simple",
-                \                           "required": [["type", type("")]]}],
-                \   ["dump", "json.dump", {   "model": "simple",
-                \                          "required": [["file", "w"],
-                \                                       ["any", ""]]}],
-                \   ["dumps", "json.dumps", {  "model": "simple",
-                \                           "required": [["any", ""]]}],]
-    "{{{3 Команды и функции
-    " Определяет команды. Для значений ключей словаря см. :h :command. Если 
-    " некоторому ключу «key» соответствует непустая строка «str», то в аргументы 
-    " :command передаётся -key=str, иначе передаётся -key. Помимо ключей 
-    " :command, в качестве ключа словаря также используется строка «func». Ключ 
-    " «func» является обязательным и содержит функцию, которая будет вызвана при 
-    " запуске команды (без префикса s:F.).
-    let s:g.load.commands={
-                \"Command": {
-                \      "nargs": '1',
-                \       "func": "mng.main",
-                \   "complete": "custom,s:_complete",
-                \},
-            \}
-    "{{{3 sid
-    function s:SID()
-        return matchstr(expand('<sfile>'), '\d\+\ze_SID$')
-    endfun
-    let s:g.scriptid=s:SID()
-    delfunction s:SID
+    execute frawor#Setup('0.0', {'@/options': '0.0',
+                \              '@/resources': '0.0',
+                \               '@/commands': '0.0',
+                \                  '@/table': '0.0',
+                \              '@/functions': '0.0',
+                \                    '@/fwc': '0.0',}, 0)
+    call map(['json', 'cache'], 'extend(s:F, {v:val : {}})')
+    "{{{2 Define JSONCache command
+    call FraworLoad('@/commands')
+    call FraworLoad('@/functions')
+    let s:jsoncmd={'@FWC': ['in [show purge] ~start 1', 'filter']}
+    call s:_f.command.add('JSONCache', s:jsoncmd,
+                \         {'nargs': '1', 'complete': [s:jsoncmd['@FWC'][0]]})
     "}}}2
-    "{{{2 Регистрация дополнения
-    let s:F.plug.load=load#LoadFuncdict()
-    let s:g.reginfo=s:F.plug.load.registerplugin({
-                \     "funcdict": s:F,
-                \     "globdict": s:g,
-                \      "oprefix": "json",
-                \      "cprefix": "JSON",
-                \          "sid": s:g.scriptid,
-                \   "scriptfile": s:g.load.scriptfile,
-                \     "commands": s:g.load.commands,
-                \"dictfunctions": s:g.load.f,
-                \   "apiversion": "0.0",
-                \     "requires": [["load", '0.0'],
-                \                  ["stuf", '0.0']],
-            \})
-    let s:F.main.eerror=s:g.reginfo.functions.eerror
-    let s:F.main.option=s:g.reginfo.functions.option
+    finish
+elseif s:_pluginloaded
     finish
 endif
 "{{{1 Вторая загрузка
-let s:g.pluginloaded=1
-"{{{2 Чистка
-unlet s:g.load
-"{{{2 s:g.cache
-let s:g.cache={}
+"{{{2 s:_options
+let s:_options={
+            \'UsePython': {'default': has('python') || has('python3'),
+            \               'filter': 'bool'},
+        \}
+"{{{2 s:cache
+let s:cache={}
 "{{{2 Выводимые сообщения
-if v:lang[:4]==#'ru_RU'
-let s:g.p={
-            \"emsg": {
-            \       "r": "Файл недоступен для чтения",
-            \       "w": "Файл недоступен для записи",
-            \    "json": "Пакет «demjson» не найден",
-            \   "rjson": "Не удалось прочитать файл с данными",
-            \    "jstr": "Неверный JSON",
-            \     "jse": "Строка в формате JSON должна заканчиваться ".
-            \            "двойным штрихом («\"»)",
-            \     "jsu": "Управляющая последовательность, ".
-            \            "начинающаяся с «\u», должна заканчиваться ".
-            \            "четырьмя шестнадцатиричными цифрами.",
-            \    "jsie": "Неверная управляющая последовательность: ".
-            \            "обратная косая черта должна следовать либо перед ".
-            \            "символом «u» и четырьмя шестнадцатиричными символами, ".
-            \            "либо перед одним из следующих символов: ".
-            \            "«\», «/», «b», «f», «n», «r», «t»",
-            \    "jobj": "Неверный объект формата JSON",
-            \    "jkey": "Ключом словаря может быть только строка",
-            \    "jdup": "Данный ключ уже использовался",
-            \     "jdt": "Не найден символ двоеточия («:»)",
-            \   "jcoma": "Отсутствует запятая",
-            \     "joe": "Не найдена закрывающая фигурная скобка («}»)",
-            \   "jlist": "Неправильный список формата JSON",
-            \     "jle": "Не найдена закрывающая квадратная скобка («]»)",
-            \    "uact": "Неизвестное действие",
-            \},
-            \"etype": {
-            \     "value": "InvalidValue",
-            \       "utf": "InvalidCharacter",
-            \    "syntax": "SyntaxErr",
-            \      "file": "BadFile",
-            \},
-            \"th": ["Файл", "Время последнего изменения"],
-            \"emptycache": "Кэш пуст",
-        \}
+if v:lang=~?'ru'
+    let s:_messages={
+                \    'r': 'Файл %s недоступен для чтения',
+                \    'w': 'Файл недоступен для записи',
+                \ 'json': 'Пакет «demjson» не найден',
+                \'rjson': 'Не удалось прочитать файл с данными',
+                \ 'jstr': 'Неверный JSON',
+                \  'jse': 'Строка в формате JSON должна заканчиваться '.
+                \         'двойным штрихом («"»)',
+                \  'jsu': 'Управляющая последовательность, '.
+                \         'начинающаяся с «\u», должна заканчиваться '.
+                \         'четырьмя шестнадцатиричными цифрами.',
+                \ 'jsie': 'Неверная управляющая последовательность: '.
+                \         'обратная косая черта должна следовать либо перед '.
+                \         'символом «u» и четырьмя шестнадцатиричными цифрами, '.
+                \         'либо перед одним из следующих символов: '.
+                \         '«\», «/», «b», «f», «n», «r», «t»',
+                \ 'jdup': 'Ключ «%s» уже присутствует в словаре',
+                \  'jdt': 'Не найден символ двоеточия («:»)',
+                \'jcoma': 'Отсутствует запятая',
+                \  'joe': 'Не найдена закрывающая фигурная скобка («}»)',
+                \  'jle': 'Не найдена закрывающая квадратная скобка («]»)',
+                \ 'uact': 'Неизвестное действие',
+                \  'utf': 'Неверный символ: %s',
+                \
+                \'th': ['Файл', 'Время последнего изменения'],
+                \'emptycache': 'Кэш пуст',
+            \}
 else
-let s:g.p={
-            \"emsg": {
-            \       "r": "File not readable",
-            \       "w": "File not writable",
-            \    "json": "Demjson must be installed in your system",
-            \   "rjson": "Failed to read JSON file",
-            \    "jstr": "Invalid JSON string",
-            \     "jse": "JSON string must end with “\"”",
-            \     "jsu": "“\u” must be followed by four hex digits",
-            \    "jsie": "Invalid escape: backslash must be followed by ".
-            \            "“u” and four hex digits or ".
-            \            "one of the following characters: ".
-            \            "“\”, “/”, “b”, “f”, “n”, “r”, “t”",
-            \    "jobj": "Invalid JSON object",
-            \    "jkey": "Key in JSON object must be of a type “string”",
-            \    "jdup": "Duplicate key",
-            \     "jdt": "“:” not found",
-            \   "jcoma": "Missing comma",
-            \     "joe": "Object must end with “}”",
-            \   "jlist": "Invalid JSON list",
-            \     "jle": "List must end with “]”",
-            \    "uact": "Uknown action",
-            \},
-            \"etype": {
-            \     "value": "InvalidValue",
-            \       "utf": "InvalidCharacter",
-            \    "syntax": "SyntaxErr",
-            \      "file": "BadFile",
-            \},
-            \"th": ["File", "Modification time"],
-            \"emptycache": "Cache is empty",
-        \}
+    let s:_messages={
+                \    'r': 'File %s is not readable',
+                \    'w': 'File not writable',
+                \ 'json': 'Demjson must be installed in your system',
+                \'rjson': 'Failed to read JSON file',
+                \ 'jstr': 'Invalid JSON string',
+                \  'jse': 'JSON string must end with “"”',
+                \  'jsu': '“\u” must be followed by four hex digits',
+                \ 'jsie': 'Invalid escape: backslash must be followed by '.
+                \         '“u” and four hex digits or '.
+                \         'one of the following characters: '.
+                \         '“\”, “/”, “b”, “f”, “n”, “r”, “t”',
+                \ 'jkey': 'Key in JSON object must be of a type “string”',
+                \ 'jdup': 'Key “%s” is already present in this dictionary',
+                \  'jdt': 'Colon not found',
+                \'jcoma': 'Missing comma',
+                \  'joe': 'Object must end with “}”',
+                \  'jle': 'List must end with “]”',
+                \ 'uact': 'Uknown action',
+                \  'utf': 'Invalid UTF symbol: %s'
+                \
+                \'th': ['File', 'Modification time'],
+                \'emptycache': 'Cache is empty',
+            \}
 endif
 "{{{1 Вторая загрузка — функции
-"{{{2 Внешние дополнения
-let s:F.plug.stuf=s:F.plug.load.getfunctions("stuf")
-"{{{2 main: eerror, destruct, option
-"{{{3 main.destruct: выгрузить плагин
-function s:F.main.destruct()
-    unlet s:g
-    unlet s:F
-    return 1
-endfunction
 "{{{2 json: dump, load, cload
-"{{{3 s:g.json
+"{{{3 s:json
 "  values — значения соответствующих объектов
 " escapes — список символов, которые можно экранировать и соответствующих им
 "           «реальных» символов
@@ -176,13 +94,13 @@ endfunction
 "           json.end необходимо передавать ссылки на переменные (все функции 
 "           принадлежат парсеру JSON) (перенесены в начало соответствующих 
 "           функций).
-let s:g.json={
-            \"values": {
-            \    "null": "",
-            \    "true": 1,
-            \   "false": 0,
+let s:json={
+            \'values': {
+            \    'null': '',
+            \    'true': 1,
+            \   'false': 0,
             \},
-            \"escapes": {
+            \'escapes': {
             \   '"': '"',
             \   '\': '\',
             \   '/': '/',
@@ -199,29 +117,28 @@ let s:g.json={
 "  str — для выделения строкового объекта JSON,
 "  var — регулярное выражение для определения имени переменной, в которую
 "        разрешено писать.
-let s:g.json.reg={
-            \"val": join(keys(s:g.json.values), '\|'),
-            \"num": '^-\=\([1-9]\d*\|0\)\(\.\d\+\)\=\([eE][+\-]\=\d\+\)\=',
-            \"str": '^"\([^\\"]\|\\\(u\x\{4}\|'.
-            \       '['.escape(join(keys(s:g.json.escapes), ''), '\[]-').']'.
+let s:json.reg={
+            \'val': join(keys(s:json.values), '\|'),
+            \'num': '^-\=\([1-9]\d*\|0\)\(\.\d\+\)\=\([eE][+\-]\=\d\+\)\=',
+            \'str': '^"\([^\\"]\|\\\(u\x\{4}\|'.
+            \       '['.escape(join(keys(s:json.escapes), ''), '\[]-').']'.
             \       '\)\)*"',
-            \"var": '[gb]:[a-zA-Z_]\(\w\@<=\.\w\|\w\)*',
+            \'var': '[gb]:[a-zA-Z_]\(\w\@<=\.\w\|\w\)*',
         \}
 "{{{3 JSON dumper/vimscript
 "{{{4 json.strstr: String->JSON
-"{{{5 s:g.json.escrev
+"{{{5 s:json.escrev
 "  escrev — «обращённая» escapes, содержит соответствие реальных символов их
 "           текстовым представлениям (под «реальным» здесь понимается то, что 
 "           содержалось в памяти до перевода в JSON).
-let s:g.json.escrev={}
-call map(copy(s:g.json.escapes),
-            \'extend(s:g.json.escrev, {v:val : "\\".v:key})')
+let s:json.escrev={}
+call map(copy(s:json.escapes),
+            \'extend(s:json.escrev, {v:val : "\\".v:key})')
 "}}}5
 function s:F.json.strstr(str)
-    let selfname="json.strstr"
     "{{{5 Пустая строка
-    if a:str==#""
-        return "null"
+    if a:str is# ''
+        return 'null'
     endif
     "{{{5 Объявление переменных
     let result='"'
@@ -235,8 +152,8 @@ function s:F.json.strstr(str)
         let char=nr2char(chnr)
         let clen=len(char)
         let chkchar=a:str[(idx):(idx+clen-1)]
-        if chkchar!=#char
-            call s:F.main.eerror(selfname, "utf", 1, strtrans(chkchar))
+        if chkchar isnot# char
+            call s:_f.throw('utf', strtrans(chkchar))
         endif
         let idx+=clen
         if clen>1
@@ -257,9 +174,9 @@ function s:F.json.strstr(str)
             else
                 let result.=char
             endif
-        elseif has_key(s:g.json.escrev, char)
+        elseif has_key(s:json.escrev, char)
             " Экранирование
-            let result.=s:g.json.escrev[char]
+            let result.=s:json.escrev[char]
         else
             let result.=char
         endif
@@ -280,61 +197,59 @@ endfunction
 "{{{4 json.strfunc: Funcref->JSON(null)
 " Представить функцию в виде JSON
 function s:F.json.strfunc(func)
-    return "null"
+    return 'null'
 endfunction
 "{{{4 json.str: *->JSON
 function s:F.json.str(obj)
-    return call(s:g.json.conv.tojstrfunc[type(a:obj)], [a:obj], {})
+    return call(s:json.conv.tojstrfunc[type(a:obj)], [a:obj], {})
 endfunction
 "{{{4 json.vsdumps
 function s:F.json.vsdumps(obj)
     return s:F.json.str(a:obj)
 endfunction
-"{{{4 s:g.json.conv.tojstrfunc
+"{{{4 s:json.conv.tojstrfunc
 " Функции, представляющие произвольный объект. Отсортированы в соответствии 
 " с типом объекта
-let s:g.json.conv={}
-let s:g.json.conv.tojstrfunc=[function("string"), s:F.json.strstr,
+let s:json.conv={}
+let s:json.conv.tojstrfunc=[function('string'), s:F.json.strstr,
             \s:F.json.strfunc, s:F.json.strlst, s:F.json.strdct,
-            \function("string")]
+            \function('string')]
 "{{{3 Парсер JSON на vimscript
 "{{{4 json.getnum: JSON->(Number|Float)
 function s:F.json.getnum(str)
-    let numstr=matchstr(a:str, s:g.json.reg.num)
+    let numstr=matchstr(a:str, s:json.reg.num)
     if numstr=~?'e'
         " 0e0 → 0.0e0 (Vim не поддерживает запись чисел с плавающей запятой
         "              без десятичной точки)
         let numstr=substitute(numstr, '^-\=\d\+[eE]\@=', '\0.0', '')
     endif
-    return      { "delta": len(numstr),
-                \"result": eval(numstr),}
+    return      { 'delta': len(numstr),
+                \'result': eval(numstr),}
 endfunction
 "{{{4 json.getstr: JSON->String
 function s:F.json.getstr(str)
-    let selfname='json.getstr'
-    let str=matchstr(a:str, s:g.json.reg.str)
+    let str=matchstr(a:str, s:json.reg.str)
     let delta=len(str)
     if !delta
-        return s:F.main.eerror(selfname, 'syntax', ["jstr"])
+        call s:_f.throw('jstr')
     endif
     " Здесь необходимо добавить поддержку суррогатных пар.
-    return      { "delta": delta,
-                \"result": eval(str),}
+    return      { 'delta': delta,
+                \'result': eval(str),}
 endfunction
 "{{{4 json.getobj: JSON->Dictionary
-"{{{5 s:g.json.objinner
-let s:g.json.objinner={
-            \ "result": {},
-            \  "delta": 1,
-            \  "endch": '}',
-            \"errargs": ["json.getobj", "syntax", ["jobj"], ["joe"]],
+"{{{5 s:json.objinner
+let s:json.objinner={
+            \'result': {},
+            \ 'delta': 1,
+            \ 'endch': '}',
+            \'emsgid': 'joe',
             \}
 "}}}5
 function s:F.json.getobj(str)
     "{{{5 Объявление переменных
-    let selfname="json.getobj"
     let tlen=len(a:str)
-    let inner=deepcopy(s:g.json.objinner)
+    let inner=deepcopy(s:json.objinner)
     let inner.str=a:str
     "{{{5 Основной цикл
     while inner.delta<tlen
@@ -348,19 +263,19 @@ function s:F.json.getobj(str)
         " Получить строку
         let lastret=s:F.json.getstr(a:str[(inner.delta):])
         if type(lastret)==type(0)
-            return s:F.main.eerror(selfname, 'syntax', ["jobj"], ["jkey"])
+            call s:_f.throw('jkey')
         endif
         let inner.delta+=lastret.delta
         let key=lastret.result
         unlet lastret
 
         if has_key(inner.result, key)
-            return s:F.main.eerror(selfname, 'syntax', ["jobj"], ["jdup"], key)
+            call s:_f.throw('jdup', key)
         endif
         "{{{6 Двоеточие
         let resstart=match(a:str, '^\_\s*\zs:', inner.delta)
         if resstart==-1
-            return s:F.main.eerror(selfname, 'syntax', ["jobj"], ["jdt"])
+            call s:_f.throw('jdt')
         endif
         let inner.delta=resstart+1
         "{{{6 Получить значение
@@ -380,22 +295,21 @@ function s:F.json.getobj(str)
         "}}}6
     endwhile
     "}}}5
-    return s:F.main.eerror(selfname, 'syntax', ["jobj"], ["joe"])
+    call s:_f.throw('joe')
 endfunction
 "{{{4 json.getlst: JSON->List
-"{{{5 s:g.json.lstinner
-let s:g.json.lstinner={
-            \ "result": [],
-            \  "delta": 1,
-            \  "endch": ']',
-            \"errargs": ["json.getlst", "syntax", ["jlist"], ["jle"]],
+"{{{5 s:json.lstinner
+let s:json.lstinner={
+            \'result': [],
+            \ 'delta': 1,
+            \ 'endch': ']',
+            \'emsgid': 'jle',
             \}
 "}}}5
 function s:F.json.getlst(str)
     "{{{5 Объявление переменных
-    let selfname="json.getlst"
     let tlen=len(a:str)
-    let inner=deepcopy(s:g.json.lstinner)
+    let inner=deepcopy(s:json.lstinner)
     let inner.str=a:str
     "{{{5 Основной цикл
     while inner.delta<tlen
@@ -416,21 +330,20 @@ function s:F.json.getlst(str)
         "}}}6
     endwhile
     "}}}5
-    return s:F.main.eerror(selfname, 'syntax', ["jlist"], ["jle"])
+    call s:_f.throw('jle')
 endfunction
 "{{{4 json.get: JSON->vim
 " Получить объект произвольного типа из JSON
 function s:F.json.get(str)
     "{{{5 Объявление переменных
-    let selfname="json.get"
     let delta=match(a:str, '\_\s*\zs[[{"tfn[:digit:].\-]')
     if delta==-1
         return 0
     endif
     let char=a:str[(delta)]
     "{{{5 Строка, список или объект
-    if has_key(s:g.json.acts, char)
-        let lastret=call(s:g.json.acts[char], [a:str[(delta):]], {})
+    if has_key(s:json.acts, char)
+        let lastret=call(s:json.acts[char], [a:str[(delta):]], {})
         if type(lastret)==type({})
             let lastret.delta+=delta
         endif
@@ -444,13 +357,13 @@ function s:F.json.get(str)
         return lastret
     "{{{5 Другое
     else
-        let str=matchstr(a:str, s:g.json.reg.val, delta)
+        let str=matchstr(a:str, s:json.reg.val, delta)
         let lstr=len(str)
         if !lstr
             return 0
         endif
-        return      { "delta": delta+lstr,
-                    \"result": s:g.json.values[str], }
+        return      { 'delta': delta+lstr,
+                    \'result': s:json.values[str], }
     endif
     "}}}5
     return 0
@@ -460,22 +373,21 @@ endfunction
 function s:F.json.end(inner)
     let end=match(a:inner.str, '^\_\s*\zs'.a:inner.endch, a:inner.delta)
     if (end)!=-1
-        return      { "delta": (end+1),
-                    \"result": a:inner.result,}
+        return      { 'delta': (end+1),
+                    \'result': a:inner.result,}
     endif
-    return call(s:F.main.eerror, a:inner.errargs, {})
+    call s:_f.throw(a:inner.emsgid)
 endfunction
 "{{{4 json.vsloads: JSON->vim, throws on error
 function s:F.json.vsloads(str)
-    let selfname="json.vsloads"
     let lastret=s:F.json.get(a:str)
     if type(lastret)==type(0)
-        call s:F.main.eerror(selfname, "file", 1, ["rjson"])
+        call s:_f.throw('rjson')
     endif
     return lastret.result
 endfunction
-"{{{4 s:g.json.acts
-let s:g.json.acts={
+"{{{4 s:json.acts
+let s:json.acts={
             \'"': s:F.json.getstr,
             \'[': s:F.json.getlst,
             \'{': s:F.json.getobj,
@@ -500,19 +412,18 @@ endfunction
 "{{{3 json.loads: JSON string->vim
 " Загрузка переменной из JSON
 function s:F.json.loads(str)
-    let selfname="json.loads"
     "{{{4 Использовать ли Python?
-    if !has("python") || !s:F.main.option("UsePython")
+    if !(has('python') || has('python3')) || !s:_f.getoption('UsePython')
         return s:F.json.vsloads(a:str)
     endif
     "{{{4 null, true и false
-    for O in keys(s:g.json.values)
-        execute "let ".O."=s:g.json.values[O]"
+    for O in keys(s:json.values)
+        execute 'let '.O.'=s:json.values[O]'
     endfor
     "{{{4 Собственно, загрузка
     try
         call s:F.json.setpython()
-        python jstr=loadfunc(vim.eval("a:str"))
+        python jstr=loadfunc(vim.eval('a:str'))
         " Simplejson не поддерживает UTF-8 символы выше 0x10FFFF, а demjson не 
         " сваливается с ошибкой, если встречается неверный UTF-8.
         " //Кроме того, demjson выдаёт UTF-8 строку, которую, если она содержит 
@@ -522,7 +433,8 @@ function s:F.json.loads(str)
         " jstr.encode("ascii", "backslashreplace")
         " //И ещё, при попытке использовать в файле суррогатные пары получается 
         " //не тот результат, на который мы рассчитывали (simplejson).
-        python vim.command("let tmp="+str(bytearray(jstr, "utf-8")))
+        python vim.eval("extend(l:, {'tmp': '"+
+                    \str(bytearray(jstr, 'utf-8')).replace("'", "''")+"'})")
         return tmp
     catch
         return s:F.json.vsloads(a:str)
@@ -531,21 +443,20 @@ function s:F.json.loads(str)
 endfunction
 "{{{3 json.dumps: vim->JSON string
 function s:F.json.dumps(what)
-    let selfname="json.dumps"
     "{{{4 Проверка возможности записи
     "{{{4 Использовать ли Python?
-    if !has("python") || !s:F.main.option("UsePython")
+    if !has('python') || !s:_f.getoption('UsePython')
         return s:F.json.vsdumps(a:what)
     endif
     "{{{4 Собственно, выгрузка
     try
         call s:F.json.setpython()
-        python var=vim.eval("a:what")
+        python var=vim.eval('a:what')
         " Simplejson не поддерживает UTF-8 символы выше 0x10FFFF, а demjson не 
         " сваливается с ошибкой, если встречается неверный UTF-8.
-        python vim.command("let str='"+
-                    \str(bytearray(dumpfunc(var), "utf-8")).replace("'", "''")+
-                    \"'")
+        python vim.eval("extend(l:, {'str': '"+
+                    \str(bytearray(dumpfunc(var), 'utf-8')).replace("'", "''")+
+                    \"'})")
         return str
     catch
         return s:F.json.vsdumps(a:what)
@@ -556,7 +467,6 @@ function s:F.json.dumps(what)
 endfunction
 "{{{3 json.dump
 function s:F.json.dump(fname, what)
-    let selfname="json.dump"
     let fname=fnamemodify(a:fname, ':p')
     let str=s:F.json.dumps(a:what)
     return writefile([str], fname)!=1
@@ -568,55 +478,49 @@ endfunction
 " наличии дополнительного аргумента, равного единице, игнорировать кэш.
 function s:F.cache.load(fname, ...)
     let ftime=getftime(a:fname)
-    if !(len(a:000) && a:000[0]) && has_key(s:g.cache, a:fname) &&
-                \s:g.cache[a:fname][0]==ftime
-        return s:g.cache[a:fname][1]
+    if !(len(a:000) && a:000[0]) && has_key(s:cache, a:fname) &&
+                \s:cache[a:fname][0]==ftime
+        return s:cache[a:fname][1]
     endif
     let fname=fnamemodify(a:fname, ':p')
     if !filereadable(fname)
-        call s:F.main.eerror(selfname, "file", 1, ["r"], fname)
+        call s:_f.throw('r', fname)
     endif
-    let str=s:F.plug.stuf.readfile(fname)
+    let str=join(readfile(fname, 'b'), "\n")
     let result=s:F.json.loads(str)
-    let s:g.cache[a:fname]=[ftime, result]
+    let s:cache[a:fname]=[ftime, result]
     return result
 endfunction
 "{{{3 cache.show
 function s:F.cache.show()
-    if s:g.cache=={}
-        echo s:g.p.emptycache
+    if empty(s:cache)
+        echo s:_messages.emptycache
         return 1
     endif
-    let header=(s:g.p.th)
-    if exists("*strftime")
-        let lines=values(map(copy(s:g.cache),
+    if exists('*strftime')
+        let lines=values(map(copy(s:cache),
                     \'[v:key, strftime("%c", v:val[0])]'))
     else
-        let lines=values(map(copy(s:g.cache),
+        let lines=values(map(copy(s:cache),
                     \'[v:key, v:val[0]]'))
     endif
-    return s:F.plug.stuf.printtable(header, lines)
+    call s:_r.printtable(lines, {'header': s:_messages.th})
+    return 1
 endfunction
-"{{{2 mng: main
-"{{{3 mng.main
-function s:F.mng.main(action)
-    let selfname="mng.main"
-    if a:action==#"showcache"
+"{{{2 jsoncmd.function
+function s:jsoncmd.function(action)
+    if a:action is# 'show'
         return s:F.cache.show()
-    elseif a:action==#"purgecache"
-        let s:g.cache={}
+    elseif a:action is# 'purge'
+        let s:cache={}
         return 1
     endif
-    return s:F.main.eerror(selfname, "value", ["uact"], a:action)
 endfunction
-"{{{2 comp: _complete
-"{{{3 comp._complete
-function s:F.comp._complete(...)
-    return "showcache\npurgecache"
-endfunction
+"{{{2 Define json resource
+call s:_f.postresource('json', {'dump': s:F.json.dump,
+            \                  'dumps': s:F.json.dumps,
+            \                   'load': s:F.cache.load,
+            \                  'loads': s:F.json.loads,})
 "{{{1
-lockvar! s:F
-lockvar! s:g
-unlockvar! s:g.cache
+call frawor#Lockvar(s:, 'cache,_pluginloaded')
 " vim: ft=vim:ts=8:fdm=marker:fenc=utf-8
-

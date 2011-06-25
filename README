@@ -10,5 +10,4 @@ Documentation: http://vimpluginloader.sourceforge.net/doc/json.txt.html
 Russian documentation: http://vimpluginloader.sourceforge.net/doc/json.rux.html
 Project page: http://sourceforge.net/projects/jsonvim
 Dependencies (you do not need to install them by yourself, see installation details):
-vimscript #3184, http://sourceforge.net/projects/vimpluginloader
-vimscript #3186, http://sourceforge.net/projects/vimstuff
+vimscript #3631, https://bitbucket.org/ZyX_I/frawor
